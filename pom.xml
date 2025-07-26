@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>dev.kalbarczyk</groupId>
-    <artifactId>GithubService</artifactId>
+    <artifactId>GithubRepositoriesService</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>GithubService</name>
-    <description>GithubService</description>
+    <name>GithubRepositoriesService</name>
+    <description>GithubRepositoriesService</description>
     <url/>
     <licenses>
         <license/>
