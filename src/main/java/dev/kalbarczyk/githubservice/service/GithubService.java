@@ -1,6 +1,7 @@
 package dev.kalbarczyk.githubservice.service;
 
 import dev.kalbarczyk.githubservice.exception.GithubUserNotFoundException;
+import dev.kalbarczyk.githubservice.exception.RateLimitExceededException;
 import dev.kalbarczyk.githubservice.model.GitHubBranch;
 import dev.kalbarczyk.githubservice.model.GitHubRepository;
 import dev.kalbarczyk.githubservice.model.dto.BranchDto;
@@ -25,10 +26,12 @@ public class GithubService {
 
         GitHubRepository[] repositories;
         try {
-            repositories = restTemplate.getForObject(GITHUB_URL + username + "/repos", GitHubRepository[].class);
+            repositories = restTemplate.getForObject(GITHUB_URL + "users/" + username + "/repos", GitHubRepository[].class);
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
                 throw new GithubUserNotFoundException(username);
+            } else if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
+                throw new RateLimitExceededException();
             }
             throw e;
         }
