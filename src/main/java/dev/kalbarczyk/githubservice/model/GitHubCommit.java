@@ -1,4 +1,4 @@
 package dev.kalbarczyk.githubservice.model;
 
-public class Branch {
+public record GitHubCommit(String sha) {
 }
