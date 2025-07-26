@@ -20,10 +20,7 @@ public class GitHubController {
 
 
     @GetMapping("/{username}/repositories")
-    public List<RepositoryDto> getRepositories(@PathVariable String username){
-        return List.of(
-                new RepositoryDto("repo1", "owner1", List.of()),
-                new RepositoryDto("repo2", "owner2", List.of())
-        );
+    public List<RepositoryDto> getRepositories(@PathVariable String username) {
+        return githubService.getRepositories(username);
     }
 }
