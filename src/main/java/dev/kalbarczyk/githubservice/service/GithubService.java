@@ -44,7 +44,7 @@ public class GithubService {
 
 
         if (repositories == null) {
-            throw new RuntimeException("GitHub Api Returned malformed data");
+            throw new GithubException.MalformedData();
         }
 
         return Stream.of(repositories)
@@ -70,7 +70,7 @@ public class GithubService {
 
 
         if (branches == null) {
-            throw new GithubException.MalformedData("GitHub API returned malformed data for branches");
+            throw new GithubException.MalformedData();
         }
         return Stream.of(branches)
                 .map(branch -> new BranchDto(branch.name(), branch.commit().sha()))

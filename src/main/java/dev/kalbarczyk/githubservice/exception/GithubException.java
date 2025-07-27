@@ -24,8 +24,8 @@ public sealed class GithubException extends RuntimeException
     }
 
     public static final class MalformedData extends GithubException {
-        public MalformedData(String message) {
-            super(message);
+        public MalformedData() {
+            super("GitHub API returned malformed data");
         }
     }
 }
