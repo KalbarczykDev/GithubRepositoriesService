@@ -4,6 +4,7 @@ import dev.kalbarczyk.githubservice.exception.GithubUserNotFoundException;
 import dev.kalbarczyk.githubservice.exception.RateLimitExceededException;
 import dev.kalbarczyk.githubservice.model.dto.BranchDto;
 import dev.kalbarczyk.githubservice.model.dto.RepositoryDto;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -14,17 +15,22 @@ import java.util.List;
 
 @Service
 public class GithubService {
-    private static final String GITHUB_URL = "https://api.github.com/";
+    private final String baseUrl;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
+    public GithubService(
+            @Value("${github.api.url:https://api.github.com/}") String baseUrl) {
+        this.restTemplate = new RestTemplate();
+        this.baseUrl = baseUrl;
+    }
 
     public List<RepositoryDto> getRepositories(String username) {
 
 
         GitHubRepository[] repositories;
         try {
-            repositories = restTemplate.getForObject(GITHUB_URL + "users/" + username + "/repos", GitHubRepository[].class);
+            repositories = restTemplate.getForObject(baseUrl + "users/" + username + "/repos", GitHubRepository[].class);
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
                 throw new GithubUserNotFoundException(username);
@@ -53,7 +59,7 @@ public class GithubService {
     }
 
     private List<BranchDto> getBranches(String owner, String repoName) {
-        String url = GITHUB_URL + "repos/" + owner + "/" + repoName + "/branches";
+        String url = baseUrl + "repos/" + owner + "/" + repoName + "/branches";
         GitHubBranch[] branches = restTemplate.getForObject(url, GitHubBranch[].class);
         List<BranchDto> result = new ArrayList<>();
 

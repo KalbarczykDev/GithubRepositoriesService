@@ -13,7 +13,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {"github.api.url=http://localhost:${wiremock.server.port}/"})
 @AutoConfigureWireMock(port = 0)
 @AutoConfigureWebTestClient
 class GitHubApiIntegrationTest {
@@ -21,12 +22,13 @@ class GitHubApiIntegrationTest {
     @LocalServerPort
     private int port;
 
+
     private WebTestClient webTestClient;
 
-    private final String username = "octocat";
 
     @BeforeEach
     void setUp() {
+
         this.webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
 
         stubFor(get(urlEqualTo("/users/octocat/repos"))
@@ -38,7 +40,12 @@ class GitHubApiIntegrationTest {
                                     "name": "Hello-World",
                                     "fork": false,
                                     "owner": { "login": "octocat" }
-                                  }
+                                  },
+                                  {
+                                   "name": "Forked-Repo",
+                                   "fork": true,
+                                   "owner": { "login": "octocat" }
+                                   }
                                 ]
                                 """)));
 
@@ -58,21 +65,22 @@ class GitHubApiIntegrationTest {
 
     @Test
     void shouldReturnNonForkRepositoriesWithBranches() {
+        String username = "octocat";
         webTestClient.get()
                 .uri("http://localhost:" + port + "/api/github/{username}/repositories", username)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBodyList(RepositoryDto.class)
                 .value(repos -> {
-                    assertThat(repos).isNotEmpty();
-                    for (RepositoryDto repo : repos) {
-                        assertThat(repo.name()).isNotBlank();
-                        assertThat(repo.ownerLogin()).isEqualToIgnoringCase(username);
-                        assertThat(repo.branches()).allSatisfy(branch -> {
-                            assertThat(branch.name()).isNotBlank();
-                            assertThat(branch.lastCommitSha()).isNotBlank();
-                        });
-                    }
+                    assertThat(repos).hasSize(1)
+                            .anySatisfy(repo -> {
+                                assertThat(repo.name()).isEqualTo("Hello-World");
+                                assertThat(repo.ownerLogin()).isEqualTo("octocat");
+                                assertThat(repo.branches()).hasSize(1);
+                                assertThat(repo.branches().getFirst().name()).isEqualTo("main");
+                                assertThat(repo.branches().getFirst().lastCommitSha()).isEqualTo("abc123");
+                            });
+
                 });
     }
 }
