@@ -1,28 +1,26 @@
 package dev.kalbarczyk.githubservice.service;
 
-import dev.kalbarczyk.githubservice.exception.GithubUserNotFoundException;
-import dev.kalbarczyk.githubservice.exception.RateLimitExceededException;
+
+import dev.kalbarczyk.githubservice.exception.GithubException;
 import dev.kalbarczyk.githubservice.model.dto.BranchDto;
 import dev.kalbarczyk.githubservice.model.dto.RepositoryDto;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Service
 public class GithubService {
-    private final String baseUrl;
 
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
 
-    public GithubService(
-            @Value("${github.api.url:https://api.github.com/}") String baseUrl) {
-        this.restTemplate = new RestTemplate();
-        this.baseUrl = baseUrl;
+    public GithubService(RestClient.Builder builder,
+                         @Value("${github.api.url:https://api.github.com/}") String baseUrl) {
+        this.restClient = builder.baseUrl(baseUrl).build();
     }
 
     public List<RepositoryDto> getRepositories(String username) {
@@ -30,46 +28,53 @@ public class GithubService {
 
         GitHubRepository[] repositories;
         try {
-            repositories = restTemplate.getForObject(baseUrl + "users/" + username + "/repos", GitHubRepository[].class);
-        } catch (HttpClientErrorException e) {
-            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                throw new GithubUserNotFoundException(username);
-            } else if (e.getStatusCode() == HttpStatus.FORBIDDEN) {
-                throw new RateLimitExceededException();
-            }
-            throw e;
+            repositories = restClient.get()
+                    .uri("users/{username}/repos", username)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::is4xxClientError, (req, res) -> {
+                        if (res.getStatusCode().value() == 404) {
+                            throw new GithubException.UserNotFound(username);
+                        } else if (res.getStatusCode().value() != 403) {
+                            throw new GithubException.RateLimitExceeded();
+                        }
+                    }).body(GitHubRepository[].class);
+        } catch (RestClientException ex) {
+            throw new RuntimeException("Unexpected error occurred while fetching repositories", ex);
         }
 
-        List<RepositoryDto> result = new ArrayList<>();
 
         if (repositories == null) {
-            return result;
+            throw new RuntimeException("GitHub Api Returned malformed data");
         }
 
-        for (GitHubRepository repo : repositories) {
-            if (!repo.fork()) {
-                List<BranchDto> branches = getBranches(repo.owner().login(), repo.name());
-                RepositoryDto dto = new RepositoryDto(repo.name(), repo.owner().login(), branches);
-                result.add(dto);
-            }
-        }
-
-
-        return result;
+        return Stream.of(repositories)
+                .filter(repo -> !repo.fork())
+                .map(repo -> new RepositoryDto(
+                        repo.name(),
+                        repo.owner().login(),
+                        getBranches(repo.owner().login(), repo.name())
+                ))
+                .toList();
     }
 
     private List<BranchDto> getBranches(String owner, String repoName) {
-        String url = baseUrl + "repos/" + owner + "/" + repoName + "/branches";
-        GitHubBranch[] branches = restTemplate.getForObject(url, GitHubBranch[].class);
-        List<BranchDto> result = new ArrayList<>();
+
+        GitHubBranch[] branches;
+        try {
+            branches = restClient.get().
+                    uri("repos/{owner}/{repo}/branches", owner, repoName)
+                    .retrieve().body(GitHubBranch[].class);
+        } catch (RestClientException ex) {
+            throw new RuntimeException("Failed to fetch branches from GitHub", ex);
+        }
+
 
         if (branches == null) {
-            return result;
+            throw new GithubException.MalformedData("GitHub API returned malformed data for branches");
         }
-        for (GitHubBranch branch : branches) {
-            result.add(new BranchDto(branch.name(), branch.commit().sha()));
-        }
-        return result;
+        return Stream.of(branches)
+                .map(branch -> new BranchDto(branch.name(), branch.commit().sha()))
+                .toList();
     }
 
     private record GitHubRepository(String name, boolean fork, GitHubOwner owner) {
