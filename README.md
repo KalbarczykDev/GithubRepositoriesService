@@ -1,12 +1,17 @@
 # GitHubRepositoriesService
 
-REST API that fetches **non-fork** GitHub repositories for a given user and includes the **branches with latest commit SHA**.
+REST API that fetches **non-fork** GitHub repositories for a given user and includes the **branches with latest commit
+SHA**.
 
-# Endpoint
+## Usage
+
+### Endpoint
+
 ```
 GET /api/github/{username}/repositories
 ```
-# Example response:
+
+### Example response:
 
 ```json
 [
@@ -23,7 +28,8 @@ GET /api/github/{username}/repositories
 ]
 ```
 
-# Error response
+### Error response
+
 ```json
 {
   "status": "error",
@@ -31,12 +37,18 @@ GET /api/github/{username}/repositories
 }
 ```
 
-# Run 
+### Run
+
 ```bash
 ./mvnw spring-boot:run
 ```
 
-# Test 
+### Test
+
 ```bash
 ./mvnw test
 ```
+
+## License
+
+[MIT](https://choosealicense.com/licenses/mit/)

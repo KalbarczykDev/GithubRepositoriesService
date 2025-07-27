@@ -2,8 +2,6 @@ package dev.kalbarczyk.githubservice.service;
 
 import dev.kalbarczyk.githubservice.exception.GithubUserNotFoundException;
 import dev.kalbarczyk.githubservice.exception.RateLimitExceededException;
-import dev.kalbarczyk.githubservice.model.GitHubBranch;
-import dev.kalbarczyk.githubservice.model.GitHubRepository;
 import dev.kalbarczyk.githubservice.model.dto.BranchDto;
 import dev.kalbarczyk.githubservice.model.dto.RepositoryDto;
 import org.springframework.http.HttpStatus;
@@ -66,6 +64,18 @@ public class GithubService {
             result.add(new BranchDto(branch.name(), branch.commit().sha()));
         }
         return result;
+    }
+
+    private record GitHubRepository(String name, boolean fork, GitHubOwner owner) {
+    }
+
+    private record GitHubOwner(String login) {
+    }
+
+    private record GitHubCommit(String sha) {
+    }
+
+    private record GitHubBranch(String name, GitHubCommit commit) {
     }
 
 }
