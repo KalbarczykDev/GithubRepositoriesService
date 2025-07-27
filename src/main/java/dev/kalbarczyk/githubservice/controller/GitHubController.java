@@ -14,13 +14,13 @@ import java.util.List;
 public class GitHubController {
     private final GithubService githubService;
 
-    public GitHubController(GithubService githubService) {
+    public GitHubController(final GithubService githubService) {
         this.githubService = githubService;
     }
 
 
     @GetMapping("/{username}/repositories")
-    public List<RepositoryDto> getRepositories(@PathVariable String username) {
+    public final List<RepositoryDto> getRepositories(final @PathVariable String username) {
         return githubService.getRepositories(username);
     }
 }

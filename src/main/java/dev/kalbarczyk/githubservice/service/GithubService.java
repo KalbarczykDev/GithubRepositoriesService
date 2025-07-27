@@ -18,12 +18,12 @@ public class GithubService {
 
     private final RestClient restClient;
 
-    public GithubService(RestClient.Builder builder,
-                         @Value("${github.api.url:https://api.github.com/}") String baseUrl) {
+    public GithubService(final RestClient.Builder builder,
+                         final @Value("${github.api.url:https://api.github.com/}") String baseUrl) {
         this.restClient = builder.baseUrl(baseUrl).build();
     }
 
-    public List<RepositoryDto> getRepositories(String username) {
+    public final List<RepositoryDto> getRepositories(final String username) {
 
 
         final GitHubRepository[] repositories;
@@ -59,7 +59,7 @@ public class GithubService {
 
     }
 
-    private List<BranchDto> getBranches(String owner, String repoName) {
+    private List<BranchDto> getBranches(final String owner, final String repoName) {
 
         final GitHubBranch[] branches;
         try {
@@ -76,8 +76,8 @@ public class GithubService {
         }
         return Stream.of(branches)
                 .map(branch -> {
-                    var name = branch.name();
-                    var sha = branch.commit().sha();
+                    final var name = branch.name();
+                    final var sha = branch.commit().sha();
                     return new BranchDto(name, sha);
                 })
                 .toList();
