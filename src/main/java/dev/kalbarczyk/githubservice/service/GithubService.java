@@ -26,20 +26,21 @@ public class GithubService {
     public List<RepositoryDto> getRepositories(String username) {
 
 
-        GitHubRepository[] repositories;
+        final GitHubRepository[] repositories;
         try {
             repositories = restClient.get()
                     .uri("users/{username}/repos", username)
                     .retrieve()
                     .onStatus(HttpStatusCode::is4xxClientError, (req, res) -> {
-                        if (res.getStatusCode().value() == 404) {
+                        final var statusCode = res.getStatusCode().value();
+                        if (statusCode == 404) {
                             throw new GithubException.UserNotFound(username);
-                        } else if (res.getStatusCode().value() != 403) {
+                        } else if (statusCode == 403) {
                             throw new GithubException.RateLimitExceeded();
                         }
                     }).body(GitHubRepository[].class);
         } catch (RestClientException ex) {
-            throw new RuntimeException("Unexpected error occurred while fetching repositories", ex);
+            throw new GithubException.FetchError(ex.getMessage());
         }
 
 
@@ -49,23 +50,24 @@ public class GithubService {
 
         return Stream.of(repositories)
                 .filter(repo -> !repo.fork())
-                .map(repo -> new RepositoryDto(
-                        repo.name(),
-                        repo.owner().login(),
-                        getBranches(repo.owner().login(), repo.name())
-                ))
-                .toList();
+                .map(repo -> {
+                    final var name = repo.name();
+                    final var owner = repo.owner().login();
+                    final var branches = getBranches(owner, name);
+                    return new RepositoryDto(name, owner, branches);
+                }).toList();
+
     }
 
     private List<BranchDto> getBranches(String owner, String repoName) {
 
-        GitHubBranch[] branches;
+        final GitHubBranch[] branches;
         try {
             branches = restClient.get().
                     uri("repos/{owner}/{repo}/branches", owner, repoName)
                     .retrieve().body(GitHubBranch[].class);
         } catch (RestClientException ex) {
-            throw new RuntimeException("Failed to fetch branches from GitHub", ex);
+            throw new GithubException.FetchError(ex.getMessage());
         }
 
 
@@ -73,7 +75,11 @@ public class GithubService {
             throw new GithubException.MalformedData();
         }
         return Stream.of(branches)
-                .map(branch -> new BranchDto(branch.name(), branch.commit().sha()))
+                .map(branch -> {
+                    var name = branch.name();
+                    var sha = branch.commit().sha();
+                    return new BranchDto(name, sha);
+                })
                 .toList();
     }
 

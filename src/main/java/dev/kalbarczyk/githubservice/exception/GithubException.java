@@ -1,15 +1,12 @@
 package dev.kalbarczyk.githubservice.exception;
 
 public sealed class GithubException extends RuntimeException
-        permits GithubException.UserNotFound, GithubException.RateLimitExceeded, GithubException.MalformedData {
+        permits GithubException.FetchError, GithubException.MalformedData, GithubException.RateLimitExceeded, GithubException.UserNotFound {
 
     public GithubException(String message) {
         super(message);
     }
 
-    public GithubException(String message, Throwable cause) {
-        super(message, cause);
-    }
 
     public static final class UserNotFound extends GithubException {
         public UserNotFound(String username) {
@@ -26,6 +23,12 @@ public sealed class GithubException extends RuntimeException
     public static final class MalformedData extends GithubException {
         public MalformedData() {
             super("GitHub API returned malformed data");
+        }
+    }
+
+    public static final class FetchError extends GithubException {
+        public FetchError(String message) {
+            super("Error fetching data from GitHub: " + message);
         }
     }
 }

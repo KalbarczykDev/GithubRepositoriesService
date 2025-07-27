@@ -65,7 +65,7 @@ class GitHubApiIntegrationTest {
 
     @Test
     void shouldReturnNonForkRepositoriesWithBranches() {
-        String username = "octocat";
+        var username = "octocat";
         webTestClient.get()
                 .uri("http://localhost:" + port + "/api/github/{username}/repositories", username)
                 .exchange()
