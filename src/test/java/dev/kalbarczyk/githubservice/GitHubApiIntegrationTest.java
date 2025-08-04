@@ -73,7 +73,7 @@ class GitHubApiIntegrationTest {
                 .expectBodyList(RepositoryDto.class)
                 .value(repos -> assertThat(repos).hasSize(1)
                         .anySatisfy(repo -> {
-                            assertThat(repo.name()).isEqualTo("Hello-World");
+                            assertThat(repo.repositoryName()).isEqualTo("Hello-World");
                             assertThat(repo.ownerLogin()).isEqualTo("octocat");
                             assertThat(repo.branches()).hasSize(1);
                             assertThat(repo.branches().getFirst().name()).isEqualTo("main");
